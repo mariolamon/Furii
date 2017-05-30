@@ -5,7 +5,7 @@ window.requestAnimFrame = (function() {
 		window.oRequestAnimationFrame 		||
 		window.msRequestAnimationFrame 		||
 		function (callback) {
-			return window.setTimeout(callback, 1000 / 120);
+			return window.setTimeout(callback, 1000 / 60);
 		});
 })();
 window.cancelRequestAnimFrame = (function() {
@@ -19,43 +19,35 @@ window.cancelRequestAnimFrame = (function() {
 
 let	canvas = document.getElementById("canvas"),
 	ctx = canvas.getContext("2d"),
-	
 	H = 600,
 	W = 800,
-	
 	startBtn = {},
 	restartBtn = {},
 	mouse = {},
-
 	viewfinder = {},
 	viewNormal = new Image(),
 	viewRed = new Image(),
-	
 	background = {},
 	backgroundStart = new Image(),
 	backgroundLevel01 = new Image(),
-	
 	player = {},
 	playerNormal = new Image(),
 	playerShot = new Image(),
-	
 	balls = [],
 	ball = {},
 	wall = [],
 	furniture = [],
-
 	up,
 	down,
 	left,
 	right,
-
 	shot = false,
-
 	point = 0,
 	life = 100,
 	lvl = 0,
-	blood = {},
-	bloodCount = 20,
+	particules = [], 
+	particule = {},
+	particuleCount = 20,
 	over = 0,
 	sound = {},
 	init;
@@ -127,14 +119,31 @@ viewfinder = {
 	}
 };
 
+particule = {
+	x: 0, y: 0,
+	draw: function() {
+		for(let i = 0; particules[i]; i++) {
+			ctx.save();
+			ctx.fillStyle = "#fbdd8d";
+			if (particules[i].a > 0) ctx.arc(particules[i].x, particules[i].y, particules[i].a, 0, Math.PI * 2, false);
+			ctx.restore();
+			particules[i].x = particules[i].vx;
+			particules[i].y = particules[i].vy;
+			particules[i].a = Math.max(particules[i].a - 0.05, 0.0);
+		}
+	}
+};
+
 ball = {
 	w: 10, h: 2, draw: function() {
 		for (let i = 0; balls[i]; i++) {
 			ctx.save();
-			ctx.translate(balls[i].x, balls[i].y);
-			ctx.rotate(balls[i].a);
-			ctx.fillStyle = "#fbdd8d";
-			ctx.fillRect(player.w / 2, 16, this.w, this.h);
+			if (collide(balls[i], wall) == false) {
+				ctx.translate(balls[i].x, balls[i].y);
+				ctx.rotate(balls[i].a);
+				ctx.fillStyle = "#fbdd8d";
+				ctx.fillRect(player.w / 2, 16, this.w, this.h);
+			}
 			ctx.restore();
 		}
 	}
@@ -171,15 +180,27 @@ restartBtn = {
 	}
 };
 
+function resetCollide() {
+	up = false;
+	down = false;
+	left = false;
+	right = false;
+};
 function collide(elementA, elementB) {
-	let index;
+	let index, t;
 	let aX, aY, aW, aH, bX, bY, bW, bH;
 	if (elementA == player) {
+		t = 6;
 		aX = elementA.x - (elementA.w / 2);
 		aY = elementA.y - (elementA.h / 2);
-		aW = elementA.w;
-		aH = elementA.h;
 	}
+	else {
+		t = 10;
+		aX = elementA.x + (player.w / 2);
+		aY = elementA.y + 16;
+	}
+	aW = elementA.w;
+	aH = elementA.h;
 	if ((elementB == wall) || (elementB == furniture)) index = lvl - 1;
 	for (let i = 0; elementB[index][i]; i++) {
 		bX = elementB[index][i].x;
@@ -187,14 +208,16 @@ function collide(elementA, elementB) {
 		bW = elementB[index][i].w;
 		bH = elementB[index][i].h;
 		if ((aX >= bX) && (aX <= (bX + bW)) || (((aX + aW) >= bX) && (aX <= bX))) {
-			if ((aY >= (bY + (bH - 6))) && (aY <= (bY + bH))) up = true;
-			if (((aY + aH) >= bY) && ((aY + aH) <= (bY + 6))) down = true;
+			if ((aY >= (bY + (bH - t))) && (aY <= (bY + bH))) up = true;
+			if (((aY + aH) >= bY) && ((aY + aH) <= (bY + t))) down = true;
 		}
 		if ((aY >= bY) && (aY <= (bY + bH)) || (((aY + aH) >= bY) && (aY <= bY))) {
-			if ((aX >= (bX + (bW - 6))) && (aX <= (bX + bW))) left = true;
-			if (((aX + aW) >= bX) && ((aX + aW) <= (bX + 6))) right = true;
+			if ((aX >= (bX + (bW - t))) && (aX <= (bX + bW))) left = true;
+			if (((aX + aW) >= bX) && ((aX + aW) <= (bX + t))) right = true;
 		}
 	}
+	if (up == true || down == true || left == true || right == true) return true;
+	else return false;
 };
 
 function wallDraw() {
@@ -222,6 +245,22 @@ function update() {
 		player.a = Math.atan2(mouse.y - player.y, mouse.x - player.x);
 		viewfinder.x = mouse.x;
 		viewfinder.y = mouse.y;
+	}
+	for (let i = 0; balls[i]; i++) {
+		let vx, vy;
+		vx = Math.sin(balls[i].a) * 5;
+		vy = Math.cos(balls[i].a) * 5;
+		if (collide(balls[i], wall) == false) {
+			balls[i].x += vy;
+			balls[i].y += vx;
+		} else {
+			if (up == true);
+			if (down == true);
+			if (left == true);
+			if (right == true);
+			balls.splice(i, 1);
+			resetCollide();
+		}
 	}
 	if (life == 0) GamOver();
 	updateLife();	
@@ -315,10 +354,7 @@ function CheckEvent(event) {
 function KeyDown(event) {
 	let WinObject = CheckEvent(event);
 	let key = WinObject.keyCode;
-	up = false;
-	down = false;
-	left = false;
-	right = false;
+	resetCollide();
 	collide(player, wall);
 	collide(player, furniture);
 	if (lvl != 0) {
