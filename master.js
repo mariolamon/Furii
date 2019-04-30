@@ -19,8 +19,8 @@ window.cancelRequestAnimFrame = (function() {
 
 let	canvas = document.getElementById("canvas"),
 	ctx = canvas.getContext("2d"),
-	H = 600,
-	W = 800,
+	height = 600,
+ 	width = 800,
 	startBtn = {},
 	restartBtn = {},
 	mouse = {},
@@ -30,6 +30,8 @@ let	canvas = document.getElementById("canvas"),
 	background = {},
 	backgroundStart = new Image(),
 	backgroundLevel01 = new Image(),
+	shadow = {},
+	shadowLevel01 = new Image(),
 	player = {},
 	playerNormal = new Image(),
 	playerShot = new Image(),
@@ -45,7 +47,7 @@ let	canvas = document.getElementById("canvas"),
 	point = 0,
 	life = 100,
 	lvl = 0,
-	particules = [], 
+	particules = [],
 	particule = {},
 	particuleCount = 20,
 	over = 0,
@@ -56,17 +58,18 @@ canvas.addEventListener("mousemove", trackPosition, true);
 canvas.addEventListener("mousedown", click, true);
 canvas.addEventListener("mouseup", function() { if (lvl != 0) shot = false; }, true);
 window.onkeydown = KeyDown;
+window.onkeyup = KeyUp;
 
-canvas.height = H;
-canvas.width = W;
+canvas.height = height;
+canvas.width = width;
 
 wall = [
-	[{w: 790, h: 7, x: 5, y: 5}, {w: 7, h: 590, x: 5, y: 5},
-	{w: 790, h: 7, x: 5, y: 588}, {w: 7, h: 590, x: 788, y: 5},
-	{w: 64, h: 7, x: 12, y: 211}, {w: 113, h: 7, x: 157, y: 211},
-	{w: 7, h: 206, x: 263, y: 12}, {w: 7, h: 306, x: 264, y: 282},
-	{w: 64, h: 7, x: 12, y: 282}, {w: 113, h: 7, x: 157, y: 282},
-	{w: 13, h: 13, x: 575, y: 315}, {w: 7, h: 14, x: 578, y: 573}]
+	[{w: 1580, h: 14, x: 10, y: 10}, {w: 14, h: 1180, x: 10, y: 10},
+	{w: 1580, h: 14, x: 10, y: 1176}, {w: 14, h: 1180, x: 1576, y: 10},
+	{w: 128, h: 14, x: 24, y: 422}, {w: 226, h: 14, x: 314, y: 422},
+	{w: 14, h: 412, x: 526, y: 24}, {w: 14, h: 612, x: 528, y: 564},
+	{w: 128, h: 14, x: 24, y: 564}, {w: 226, h: 14, x: 314, y: 564},
+	{w: 26, h: 26, x: 1150, y: 630}, {w: 14, h: 14, x: 1156, y: 1146}]
 ];
 furniture = [
 	[{w: 133, h: 45, x: 16, y: 21}, {w: 12, h: 54, x: 12, y: 92},
@@ -79,13 +82,14 @@ furniture = [
 	{w: 12, h: 38, x: 466, y: 348}, {w: 16, h: 38, x: 466, y: 394},
 	{w: 10, h: 38, x: 466, y: 439}, {w: 12, h: 38, x: 466, y: 481},
 	{w: 37, h: 124, x: 563, y: 408}, {w: 55, h: 152, x: 733, y: 436},
-	{w: 60, h: 64, x: 660, y: 523}, {w: 51, h: 48, x: 737, y: 386}]	
+	{w: 60, h: 64, x: 660, y: 523}, {w: 51, h: 48, x: 737, y: 386}]
 ];
 
-playerNormal.src = "img/Player.png";
-playerShot.src = "img/PlayerShot.png";
+playerNormal.src = "sprite/Player.png";
+playerShot.src = "sprite/PlayerShot.png";
 player = {
-	w: 55, h: 46, x: (W / 2 - 46), y: (H / 2 - 55), a: 0,
+	w: 110, h: 92, x: (width / 2 - 55), y: (height / 2 - 46), a: 0,
+	up: false, down: false, left: false, right: false,
 	draw: function() {
 		ctx.save();
 		ctx.translate(this.x, this.y);
@@ -96,20 +100,36 @@ player = {
 	}
 };
 
-backgroundStart.src = "img/BackgroundMain.png";
-backgroundLevel01.src = "img/BackgroundLevel01.png";
+backgroundStart.src = "sprite/BackgroundMain1.png";
+backgroundLevel01.src = "sprite/BackgroundLevel01.png";
 background = {
-	w: 800, h:600, x: 0, y: 0,
+	lvl: [
+		{w: 800, h: 600, x: 0, y: 0, img: backgroundStart},
+		{w: 1600, h: 1200, x: 0, y: 0, img: backgroundLevel01}
+	],
 	draw: function() {
 		ctx.save();
-		if (over == 1) ctx.drawImage(backgroundStart, this.x, this.y);
-		else ctx.drawImage(backgroundLevel01, this.x, this.y);
+		if (over == 1) ctx.drawImage(this.lvl[0].img, this.lvl[0].x, this.lvl[0].y);
+		else ctx.drawImage(this.lvl[1].img, this.lvl[1].x, this.lvl[1].y);
 		ctx.restore();
 	}
 };
 
-viewNormal.src = "img/Viewfinder.png";
-viewRed.src = "img/ViewfinderRed.png";
+shadowLevel01.src = "sprite/ShadowLevel01.png";
+shadow = {
+	lvl: [
+		{},
+		{w: 1600, h: 1200, x: 0, y: 0, img: shadowLevel01},
+	],
+	draw: function() {
+		ctx.save();
+		ctx.drawImage(this.lvl[1].img, this.lvl[1].x, this.lvl[1].y);
+		ctx.restore();
+	}
+};
+
+viewNormal.src = "sprite/Viewfinder.png";
+viewRed.src = "sprite/ViewfinderRed.png";
 viewfinder = {
 	w: 21, h: 21, x: 0, y: 0,
 	draw: function() {
@@ -150,7 +170,7 @@ ball = {
 };
 
 startBtn = {
-	w:  100, h: 40, x: (W / 2 - 50), y: (H / 2 - 25),
+	w:  100, h: 40, x: (width / 2 - 50), y: (height / 2 - 25),
 	draw: function() {
 		ctx.save();
 		ctx.strokeStyle = "#ffffff";
@@ -160,12 +180,12 @@ startBtn = {
 		ctx.textAlign = "center";
 		ctx.textBaseligne = "middle";
 		ctx.fillStyle = "#fff";
-		ctx.fillText("Start", (W / 2), (H / 2));
+		ctx.fillText("Start", (width / 2), (height / 2));
 		ctx.restore();
 	}
 };
 restartBtn = {
-	w: 100, h: 50, x: (W / 2 - 50), y: (H / 2 - 50),
+	w: 100, h: 50, x: (width / 2 - 50), y: (height / 2 - 50),
 	draw: function() {
 		ctx.save();
 		ctx.strokeStyle = "#ffffff";
@@ -175,17 +195,13 @@ restartBtn = {
 		ctx.textAlign = "center";
 		ctx.textBaseline = "middle";
 		ctx.fillStlye = "#fff";
-		ctx.fillText("Restart", (W / 2), (H / 2 - 25));
+		ctx.fillText("Restart", (width / 2), (height / 2 - 25));
 		ctx.restore();
 	}
 };
 
-function resetCollide() {
-	up = false;
-	down = false;
-	left = false;
-	right = false;
-};
+function scrolling () {
+}
 function collide(elementA, elementB) {
 	let index, t;
 	let aX, aY, aW, aH, bX, bY, bW, bH;
@@ -219,7 +235,6 @@ function collide(elementA, elementB) {
 	if (up == true || down == true || left == true || right == true) return true;
 	else return false;
 };
-
 function wallDraw() {
 	ctx.save();
 	ctx.fillStyle = "red";
@@ -229,9 +244,11 @@ function wallDraw() {
 
 function draw() {
 	background.draw();
-	ball.draw();
 	player.draw();
+	shadow.draw();
+	ball.draw();
 	viewfinder.draw();
+	wallDraw();
 	update();
 };
 
@@ -246,7 +263,31 @@ function update() {
 		viewfinder.x = mouse.x;
 		viewfinder.y = mouse.y;
 	}
-	for (let i = 0; balls[i]; i++) {
+	if (player.right) {
+		background.lvl[1].x -= 4;
+		shadow.lvl[1].x -= 4;
+		for (let i = 0; wall[0][i]; i++) wall[0][i].x -=4;
+		for (let i = 0; balls[i]; i++) balls[i].x -=4;
+	}
+	if (player.left) {
+		background.lvl[1].x += 4;
+		shadow.lvl[1].x += 4;
+		for (let i = 0; wall[0][i]; i++) wall[0][i].x +=4;
+		for (let i = 0; balls[i]; i++) balls[i].x +=4;
+	}
+	if (player.up) {
+		background.lvl[1].y += 4;
+		shadow.lvl[1].y += 4;
+		for (let i = 0; wall[0][i]; i++) wall[0][i].y +=4;
+		for (let i = 0; balls[i]; i++) balls[i].y +=4;
+	}
+	if (player.down) {
+		background.lvl[1].y -= 4;
+		shadow.lvl[1].y -= 4;
+		for (let i = 0; wall[0][i]; i++) wall[0][i].y -=4;
+		for (let i = 0; balls[i]; i++) balls[i].y -=4;
+	}
+	/*for (let i = 0; balls[i]; i++) {
 		let vx, vy;
 		vx = Math.sin(balls[i].a) * 5;
 		vy = Math.cos(balls[i].a) * 5;
@@ -261,9 +302,10 @@ function update() {
 			balls.splice(i, 1);
 			resetCollide();
 		}
-	}
+	}*/
 	if (life == 0) GamOver();
-	updateLife();	
+	updateLife();
+	console.log(balls);
 };
 function updateScore() {
 	ctx.save();
@@ -298,19 +340,22 @@ function startScreen() {
 } startScreen();
 
 function click(event) {
-	let mx = event.pageX, my = event.pageY;
+	mouse.x = event.pageX;
+	mouse.y = event.pageY;
 	if (lvl != 0) {
 		balls.push({x: player.x, y: player.y, a: player.a});
 		shot = true;
 	}
-	if ((mx >= startBtn.x && mx <= startBtn.x + startBtn.w) && (my >= startBtn.y && my <= startBtn.y + startBtn.h)) {
+	if ((mouse.x >= startBtn.x && mouse.x <= startBtn.x + startBtn.w)
+	&& (mouse.y >= startBtn.y && mouse.y <= startBtn.y + startBtn.h)) {
 		animLoop();
 		startBtn = {};
 		lvl = 1;
 		canvas.style.cursor = "none";
 	}
 	if (over == 1) {
-		if ((mx >= restartBtn.x && mx <= restartBtn.x + restartBtn.w) && (my >= restartBtn.y && my <= restartBtn.y + restartBtn.h)) {
+		if ((mouse.x >= restartBtn.x && mouse.x <= restartBtn.x + restartBtn.w)
+		&& (mouse.y >= restartBtn.y && mouse.y <= restartBtn.y + restartBtn.h)) {
 			animLoop();
 			over = 0;
 			lvl = 1;
@@ -354,13 +399,20 @@ function CheckEvent(event) {
 function KeyDown(event) {
 	let WinObject = CheckEvent(event);
 	let key = WinObject.keyCode;
-	resetCollide();
-	collide(player, wall);
-	collide(player, furniture);
 	if (lvl != 0) {
-		if ((key == KEY_RIGHT || key == KEY_D) && (right != true)) player.x += 6;
-		if ((key == KEY_LEFT || key == KEY_Q) && (left != true)) player.x -= 6;
-		if ((key == KEY_UP || key == KEY_Z) && (up != true)) player.y -= 6;
-		if ((key == KEY_DOWN || key == KEY_S) && (down != true)) player.y += 6;
+		if (key == KEY_RIGHT || key == KEY_D) player.right = true;
+		if (key == KEY_LEFT || key == KEY_Q) player.left = true;
+		if (key == KEY_UP || key == KEY_Z) player.up = true;
+		if (key == KEY_DOWN || key == KEY_S) player.down = true;
+	}
+};
+function KeyUp(event) {
+	let WinObject = CheckEvent(event);
+	let key = WinObject.keyCode;
+	if (lvl != 0) {
+		if (key == KEY_RIGHT || key == KEY_D) player.right = false;
+		if (key == KEY_LEFT || key == KEY_Q) player.left = false;
+		if (key == KEY_UP || key == KEY_Z) player.up = false;
+		if (key == KEY_DOWN || key == KEY_S) player.down = false;
 	}
 };
